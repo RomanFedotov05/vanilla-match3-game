@@ -1,1 +1,1 @@
-Запустити гру - https://github.com/RomanFedotov05/vanilla-match3-game
+Запустити гру - https://romanfedotov05.github.io/vanilla-match3-game/
