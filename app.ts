@@ -189,7 +189,6 @@
     type: number,
     onComplete: () => void,
   ) {
-    // Ефект "заряду" перед вибухом
     flash[r][c] = 1;
     scale[r][c] = 1.3;
 
@@ -200,7 +199,6 @@
       let hexColor = colors[type % 10] || "#FFF";
 
       if (type > 10 && type < 20) {
-        // БОМБА: Збираємо фігури навколо
         for (let i = -1; i <= 1; i++) {
           for (let j = -1; j <= 1; j++) {
             let nr = r + i,
@@ -210,8 +208,7 @@
           }
         }
 
-        // --- ГЕНЕРУЄМО ВИБУХ (Тряска + Частинки) ---
-        screenShake = 15; // Сила тряски
+        screenShake = 15;
         for (let p = 0; p < 40; p++) {
           let angle = Math.random() * Math.PI * 2;
           let speed = Math.random() * 8 + 2;
@@ -222,12 +219,11 @@
             vy: Math.sin(angle) * speed,
             life: 100,
             maxLife: 100,
-            color: Math.random() > 0.5 ? hexColor : "#FFF", // Іскри кольору бомби + білі
+            color: Math.random() > 0.5 ? hexColor : "#FFF",
             size: Math.random() * 6 + 3,
           });
         }
       } else if (type > 20) {
-        // КРИСТАЛ: Збираємо всі фігури цього кольору
         let color = type % 10;
         for (let i = 0; i < ROWS; i++) {
           for (let j = 0; j < COLS; j++) {
@@ -236,8 +232,7 @@
           }
         }
 
-        // --- ГЕНЕРУЄМО СТРУМ (Блискавки) ---
-        screenShake = 8; // Легка вібрація
+        screenShake = 8;
         for (let i = 0; i < affected.length; i++) {
           let targetX = OFFSET_X + affected[i].c * CELL_SIZE + CELL_SIZE / 2;
           let targetY = OFFSET_Y + affected[i].r * CELL_SIZE + CELL_SIZE / 2;
@@ -247,13 +242,12 @@
             x2: targetX,
             y2: targetY,
             life: 100,
-            maxLife: 100, // Тривалість струму
+            maxLife: 100,
             color: hexColor,
           });
         }
       }
 
-      // Плавне зникнення фігур
       let step = 25;
       let interval = setInterval(() => {
         for (let i = 0; i < affected.length; i++) {
@@ -389,6 +383,7 @@
     }, 20);
   }
 
+  // --- ТУТ ОНОВЛЕНА ЛОГІКА ОЛЕКСІЯ ---
   function refillBoard() {
     for (let c = 0; c < COLS; c++) {
       let empty = 0;
@@ -402,14 +397,18 @@
           board[r][c] = 0;
         }
       }
-      for (let r = 0; r < empty; r++) {
+
+      let spawnedInThisCol = 1;
+      for (let r = empty - 1; r >= 0; r--) {
         board[r][c] = Math.floor(Math.random() * TYPES) + 1;
-        visualY[r][c] = -CELL_SIZE * (r + 1);
+        visualY[r][c] = -CELL_SIZE * spawnedInThisCol;
         visualX[r][c] = c * CELL_SIZE;
         scale[r][c] = 1;
+        spawnedInThisCol++;
       }
     }
   }
+  // -----------------------------------
 
   function isSwapping(r: number, c: number): boolean {
     if (gameState !== "ANIMATING_SWAP") return false;
@@ -423,7 +422,6 @@
     let moving = false;
     let currentSpeed = gameState === "ANIMATING_SWAP" ? SWAP_SPEED : FALL_SPEED;
 
-    // Оновлення фігур
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         let targetY = r * CELL_SIZE;
@@ -458,10 +456,8 @@
     if (gameState === "WAITING" && comboAlpha > 0) comboAlpha -= 0.02;
     if (comboScale > 1) comboScale -= 0.05;
 
-    // Оновлення Тряски
     if (screenShake > 0) screenShake -= 1;
 
-    // Оновлення Частинок (Вибух)
     for (let i = particles.length - 1; i >= 0; i--) {
       particles[i].x += particles[i].vx;
       particles[i].y += particles[i].vy;
@@ -469,7 +465,6 @@
       if (particles[i].life <= 0) particles.splice(i, 1);
     }
 
-    // Оновлення Блискавок
     for (let i = lightnings.length - 1; i >= 0; i--) {
       lightnings[i].life--;
       if (lightnings[i].life <= 0) lightnings.splice(i, 1);
@@ -581,7 +576,6 @@
 
     ctx.save();
 
-    // Застосовуємо Тряску Екрану
     if (screenShake > 0) {
       let dx = (Math.random() - 0.5) * screenShake;
       let dy = (Math.random() - 0.5) * screenShake;
@@ -619,7 +613,6 @@
       }
     }
 
-    // МАЛЮЄМО СТРУМ (Блискавки)
     for (let i = 0; i < lightnings.length; i++) {
       let l = lightnings[i];
       ctx.globalAlpha = l.life / l.maxLife;
@@ -630,7 +623,7 @@
       let steps = 5;
       for (let s = 1; s <= steps; s++) {
         let t = s / steps;
-        let lx = l.x1 + (l.x2 - l.x1) * t + (Math.random() - 0.5) * 30; // Електричне мерехтіння
+        let lx = l.x1 + (l.x2 - l.x1) * t + (Math.random() - 0.5) * 30;
         let ly = l.y1 + (l.y2 - l.y1) * t + (Math.random() - 0.5) * 30;
         if (s === steps) {
           lx = l.x2;
@@ -639,14 +632,12 @@
         ctx.lineTo(lx, ly);
       }
       ctx.stroke();
-      // Біла серцевина струму
       ctx.strokeStyle = "white";
       ctx.lineWidth = 2;
       ctx.stroke();
       ctx.globalAlpha = 1.0;
     }
 
-    // МАЛЮЄМО ЧАСТИНКИ (Вибух)
     for (let i = 0; i < particles.length; i++) {
       let p = particles[i];
       ctx.globalAlpha = p.life / p.maxLife;
@@ -657,9 +648,8 @@
     }
     ctx.globalAlpha = 1.0;
 
-    ctx.restore(); // Кінець блоку тряски
+    ctx.restore();
 
-    // --- МЕНЮ СТАТИСТИКИ ---
     let uiX = 520;
 
     ctx.fillStyle = "#888";

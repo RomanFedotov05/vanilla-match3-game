@@ -136,7 +136,6 @@
         });
     }
     function executeSuper(r, c, type, onComplete) {
-        // Ефект "заряду" перед вибухом
         flash_1[r][c] = 1;
         scale_1[r][c] = 1.3;
         setTimeout(function () {
@@ -145,7 +144,6 @@
             var cy = OFFSET_Y_1 + r * CELL_SIZE_1 + CELL_SIZE_1 / 2;
             var hexColor = colors_1[type % 10] || "#FFF";
             if (type > 10 && type < 20) {
-                // БОМБА: Збираємо фігури навколо
                 for (var i = -1; i <= 1; i++) {
                     for (var j = -1; j <= 1; j++) {
                         var nr = r + i, nc = c + j;
@@ -153,8 +151,7 @@
                             affected.push({ r: nr, c: nc });
                     }
                 }
-                // --- ГЕНЕРУЄМО ВИБУХ (Тряска + Частинки) ---
-                screenShake_1 = 15; // Сила тряски
+                screenShake_1 = 15;
                 for (var p = 0; p < 40; p++) {
                     var angle = Math.random() * Math.PI * 2;
                     var speed = Math.random() * 8 + 2;
@@ -165,13 +162,12 @@
                         vy: Math.sin(angle) * speed,
                         life: 100,
                         maxLife: 100,
-                        color: Math.random() > 0.5 ? hexColor : "#FFF", // Іскри кольору бомби + білі
+                        color: Math.random() > 0.5 ? hexColor : "#FFF",
                         size: Math.random() * 6 + 3,
                     });
                 }
             }
             else if (type > 20) {
-                // КРИСТАЛ: Збираємо всі фігури цього кольору
                 var color = type % 10;
                 for (var i = 0; i < ROWS_1; i++) {
                     for (var j = 0; j < COLS_1; j++) {
@@ -179,8 +175,7 @@
                             affected.push({ r: i, c: j });
                     }
                 }
-                // --- ГЕНЕРУЄМО СТРУМ (Блискавки) ---
-                screenShake_1 = 8; // Легка вібрація
+                screenShake_1 = 8;
                 for (var i = 0; i < affected.length; i++) {
                     var targetX = OFFSET_X_1 + affected[i].c * CELL_SIZE_1 + CELL_SIZE_1 / 2;
                     var targetY = OFFSET_Y_1 + affected[i].r * CELL_SIZE_1 + CELL_SIZE_1 / 2;
@@ -190,12 +185,11 @@
                         x2: targetX,
                         y2: targetY,
                         life: 100,
-                        maxLife: 100, // Тривалість струму
+                        maxLife: 100,
                         color: hexColor,
                     });
                 }
             }
-            // Плавне зникнення фігур
             var step = 25;
             var interval = setInterval(function () {
                 for (var i = 0; i < affected.length; i++) {
@@ -317,6 +311,7 @@
             }
         }, 20);
     }
+    // --- ТУТ ОНОВЛЕНА ЛОГІКА ОЛЕКСІЯ ---
     function refillBoard() {
         for (var c = 0; c < COLS_1; c++) {
             var empty = 0;
@@ -331,14 +326,17 @@
                     board_1[r][c] = 0;
                 }
             }
-            for (var r = 0; r < empty; r++) {
+            var spawnedInThisCol = 1;
+            for (var r = empty - 1; r >= 0; r--) {
                 board_1[r][c] = Math.floor(Math.random() * TYPES_1) + 1;
-                visualY_1[r][c] = -CELL_SIZE_1 * (r + 1);
+                visualY_1[r][c] = -CELL_SIZE_1 * spawnedInThisCol;
                 visualX_1[r][c] = c * CELL_SIZE_1;
                 scale_1[r][c] = 1;
+                spawnedInThisCol++;
             }
         }
     }
+    // -----------------------------------
     function isSwapping(r, c) {
         if (gameState_1 !== "ANIMATING_SWAP")
             return false;
@@ -351,7 +349,6 @@
     function update() {
         var moving = false;
         var currentSpeed = gameState_1 === "ANIMATING_SWAP" ? SWAP_SPEED_1 : FALL_SPEED_1;
-        // Оновлення фігур
         for (var r = 0; r < ROWS_1; r++) {
             for (var c = 0; c < COLS_1; c++) {
                 var targetY = r * CELL_SIZE_1;
@@ -385,10 +382,8 @@
             comboAlpha_1 -= 0.02;
         if (comboScale_1 > 1)
             comboScale_1 -= 0.05;
-        // Оновлення Тряски
         if (screenShake_1 > 0)
             screenShake_1 -= 1;
-        // Оновлення Частинок (Вибух)
         for (var i = particles_1.length - 1; i >= 0; i--) {
             particles_1[i].x += particles_1[i].vx;
             particles_1[i].y += particles_1[i].vy;
@@ -396,7 +391,6 @@
             if (particles_1[i].life <= 0)
                 particles_1.splice(i, 1);
         }
-        // Оновлення Блискавок
         for (var i = lightnings_1.length - 1; i >= 0; i--) {
             lightnings_1[i].life--;
             if (lightnings_1[i].life <= 0)
@@ -493,7 +487,6 @@
         ctx_1.fillStyle = "#1E1E24";
         ctx_1.fillRect(0, 0, canvas_1.width, canvas_1.height);
         ctx_1.save();
-        // Застосовуємо Тряску Екрану
         if (screenShake_1 > 0) {
             var dx = (Math.random() - 0.5) * screenShake_1;
             var dy = (Math.random() - 0.5) * screenShake_1;
@@ -520,7 +513,6 @@
                     drawTile(r, c);
             }
         }
-        // МАЛЮЄМО СТРУМ (Блискавки)
         for (var i = 0; i < lightnings_1.length; i++) {
             var l = lightnings_1[i];
             ctx_1.globalAlpha = l.life / l.maxLife;
@@ -531,7 +523,7 @@
             var steps = 5;
             for (var s = 1; s <= steps; s++) {
                 var t = s / steps;
-                var lx = l.x1 + (l.x2 - l.x1) * t + (Math.random() - 0.5) * 30; // Електричне мерехтіння
+                var lx = l.x1 + (l.x2 - l.x1) * t + (Math.random() - 0.5) * 30;
                 var ly = l.y1 + (l.y2 - l.y1) * t + (Math.random() - 0.5) * 30;
                 if (s === steps) {
                     lx = l.x2;
@@ -540,13 +532,11 @@
                 ctx_1.lineTo(lx, ly);
             }
             ctx_1.stroke();
-            // Біла серцевина струму
             ctx_1.strokeStyle = "white";
             ctx_1.lineWidth = 2;
             ctx_1.stroke();
             ctx_1.globalAlpha = 1.0;
         }
-        // МАЛЮЄМО ЧАСТИНКИ (Вибух)
         for (var i = 0; i < particles_1.length; i++) {
             var p = particles_1[i];
             ctx_1.globalAlpha = p.life / p.maxLife;
@@ -556,8 +546,7 @@
             ctx_1.fill();
         }
         ctx_1.globalAlpha = 1.0;
-        ctx_1.restore(); // Кінець блоку тряски
-        // --- МЕНЮ СТАТИСТИКИ ---
+        ctx_1.restore();
         var uiX = 520;
         ctx_1.fillStyle = "#888";
         ctx_1.font = "16px Arial";
